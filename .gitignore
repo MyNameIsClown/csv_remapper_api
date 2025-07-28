@@ -48,3 +48,6 @@ Thumbs.db
 
 # MyPy type checker cache
 .mypy_cac_
+
+# Folder for Files
+files/
