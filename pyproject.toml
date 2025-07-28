@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "csv-remapper-api"
+version = "0.1.0"
+description = "API for csv-remapper-lib"
+authors = ["Víctor Carrasco <vc.business.oo@gmail.com>"]
+packages = [{include = "app"}]
+license = "AGPL v3"
+homepage = "https://github.com/MyNameIsClown/csv_remapper_api"
+repository = "https://github.com/MyNameIsClown/csv_remapper_api"
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+fastapi = {version = ">=0.116.1,<0.117.0", extras = ["standard"]}
+csv-remapper-lib = {version = ">=1.0.0,<2.0.0"}
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+pytest-cov = "^6.2.1"
+requests-mock = "^1.12.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

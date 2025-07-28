@@ -1,0 +1,50 @@
+# Python virtual environment
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Poetry lock file (optional if using only pyproject.toml)
+poetry.lock
+
+# Test cache and coverage reports
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# FastAPI / Uvicorn PID files
+*.pid
+
+# MyPy type checker cache
+.mypy_cac_
