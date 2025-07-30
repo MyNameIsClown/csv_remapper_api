@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csv-remapper-api"
-version = "0.2.0"
+version = "0.3.0"
 description = "API for csv-remapper-lib"
 authors = ["Víctor Carrasco <vc.business.oo@gmail.com>"]
 packages = [{include = "app"}]
@@ -19,6 +19,7 @@ csv-remapper-lib = {version = ">=1.0.0,<2.0.0"}
 pytest = "^8.4.1"
 pytest-cov = "^6.2.1"
 requests-mock = "^1.12.1"
+httpx = "^0.28.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
