@@ -1,3 +1,4 @@
+import os
 import uuid
 from fastapi import UploadFile, APIRouter, HTTPException, status
 from csv_remapper_lib import CSVFile, ConnectorType
@@ -14,13 +15,17 @@ from .utils import file_exists
 
 router = APIRouter(prefix="/csv-file")
 
+# Ensure the files directory exists for storing CSVs
+os.makedirs("files", exist_ok=True)
+
 @router.post("/")
 async def create_file(file: UploadFile):
     contents = await file.read()
     # TODO: Analyze file toprevent security risks
     # Save file
-    file_id = uuid.uuid4()
-    csv_route = "files/%s" % (str(file_id) + ".csv")
+    file_id = str(uuid.uuid4())
+    csv_route = "files/%s.csv" % (file_id)
+    os.makedirs(os.path.dirname(csv_route), exist_ok=True)
     with open(csv_route, "x") as f:
         f.write(contents.decode().replace("\r\n", "\n"))
     # TODO: Start counter for remove file
