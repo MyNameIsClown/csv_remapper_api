@@ -75,5 +75,6 @@ def test_multiple_operations(tmp_path):
         }
     )
     assert resp.status_code == 200
+    assert resp.json() == "Merge complete"
     # Final file should exist
     assert os.path.isfile(f"files/{file_id}.csv")

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csv-remapper-api"
-version = "0.3.0"
+version = "0.3.1"
 description = "API for csv-remapper-lib"
 authors = ["Víctor Carrasco <vc.business.oo@gmail.com>"]
 packages = [{include = "app"}]
