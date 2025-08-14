@@ -1,5 +1,7 @@
 import os
+import re
 import uuid
+from datetime import datetime
 from fastapi import UploadFile, APIRouter, HTTPException, status
 from csv_remapper_lib import CSVFile, ConnectorType
 
@@ -11,7 +13,10 @@ from app.api.v1.schemas import (
     NormalizeValueModel,
     MergeKeysModel
 )
-from .utils import file_exists
+from .utils import (
+    check_file_exists,
+    convert_python_types_to_string
+)
 
 router = APIRouter(prefix="/csv-file")
 
@@ -21,7 +26,9 @@ os.makedirs("files", exist_ok=True)
 @router.post("/")
 async def create_file(file: UploadFile):
     contents = await file.read()
-    # TODO: Analyze file toprevent security risks
+    # TODO: Analyze file to prevent security risks
+    if not re.search(r"\.(csv|tsv)$", file.filename, re.IGNORECASE):
+        raise HTTPException(status_code=400, detail="File type not supported")
     # Save file
     file_id = str(uuid.uuid4())
     csv_route = "files/%s.csv" % (file_id)
@@ -30,14 +37,28 @@ async def create_file(file: UploadFile):
         f.write(contents.decode().replace("\r\n", "\n"))
     # TODO: Start counter for remove file
     # Return File id
-    return {"file_id": file_id}
+    csv = CSVFile(csv_route)
+    csv_types = convert_python_types_to_string(csv.all_key_types())
+    
+    data = {
+        "file_id": file_id,
+        "types": csv_types
+    }
+    return data
+
+@router.get("/{file_id}")
+def get_csv_info(file_id:str):
+    csv_route = check_file_exists(file_id)
+    csv = CSVFile(csv_route)
+    try:
+        info = convert_python_types_to_string(csv.all_key_types())
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return info
 
 @router.put("/{file_id}/rename-key/")
 def rename_key(file_id: str, rename_key_model: RenameKeyModel):
-    # Found file
-    csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
+    csv_route = check_file_exists(file_id)
     csv = CSVFile(csv_route)
     try:
         csv.rename_key(rename_key_model.key_names[0], rename_key_model.key_names[1])

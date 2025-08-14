@@ -10,5 +10,9 @@ class Settings():
     API_APP_PORT=int(os.environ.get("API_APP_PORT", "8000"))
     WEB_APP_HOST=os.environ.get("WEB_APP_HOST", "127.0.0.1")
     WEB_APP_PORT=os.environ.get("WEB_APP_PORT", "3200")
+    ALLOW_ORIGINS=os.environ.get("ALLOW_ORIGINS", [
+        "http://localhost",
+        "http://localhost:8080"
+    ])
 
 settings = Settings()
