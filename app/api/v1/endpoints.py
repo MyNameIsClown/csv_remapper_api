@@ -35,7 +35,6 @@ async def create_file(file: UploadFile):
     os.makedirs(os.path.dirname(csv_route), exist_ok=True)
     with open(csv_route, "x") as f:
         f.write(contents.decode().replace("\r\n", "\n"))
-    # TODO: Start counter for remove file
     # Return File id
     csv = CSVFile(csv_route)
     csv_types = convert_python_types_to_string(csv.all_key_types())
