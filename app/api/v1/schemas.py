@@ -28,3 +28,9 @@ class MergeKeysModel(BaseModel):
     ordered_keys: list[str]
     connector: MergeConnectorModel
     new_key_name: str
+class TransformModel(BaseModel):
+    old_key_name: str;
+    new_key_name: str;
+    old_type: str;
+    new_type: str;
+    is_active: bool;

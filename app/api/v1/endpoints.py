@@ -2,7 +2,7 @@ import os
 import re
 import uuid
 from datetime import datetime
-from fastapi import UploadFile, APIRouter, HTTPException, status
+from fastapi import UploadFile, APIRouter, HTTPException, status, Body
 from csv_remapper_lib import CSVFile, ConnectorType
 
 from app.api.v1.schemas import (
@@ -11,9 +11,10 @@ from app.api.v1.schemas import (
     RemoveKeyModel,
     RemoveKeysModel,
     NormalizeValueModel,
-    MergeKeysModel
+    MergeKeysModel,
+    TransformModel
 )
-from .utils import (
+from app.api.v1.utils import (
     check_file_exists,
     convert_python_types_to_string
 )
@@ -70,7 +71,7 @@ def rename_key(file_id: str, rename_key_model: RenameKeyModel):
 def rename_keys(file_id: str, rename_keys_model: RenameKeysModel):
     # Found file
     csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
+    if not check_file_exists(csv_route):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
     csv = CSVFile(csv_route)
     try:
@@ -84,7 +85,7 @@ def rename_keys(file_id: str, rename_keys_model: RenameKeysModel):
 def remove_key(file_id: str, remove_key_model: RemoveKeyModel):
     # Found file
     csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
+    if not check_file_exists(csv_route):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
     csv = CSVFile(csv_route)
     try:
@@ -98,7 +99,7 @@ def remove_key(file_id: str, remove_key_model: RemoveKeyModel):
 def remove_keys(file_id: str, remove_keys_model: RemoveKeysModel):
     # Found file
     csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
+    if not check_file_exists(csv_route):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
     csv = CSVFile(csv_route)
     try:
@@ -112,7 +113,7 @@ def remove_keys(file_id: str, remove_keys_model: RemoveKeysModel):
 def normalize_values(file_id: str, normalize_model: NormalizeValueModel):
     # Found file
     csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
+    if not check_file_exists(csv_route):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
     csv = CSVFile(csv_route)
     try:
@@ -131,7 +132,7 @@ def normalize_values(file_id: str, normalize_model: NormalizeValueModel):
 def merge_keys(file_id: str, merge_keys_model: MergeKeysModel):
     # Found file
     csv_route = "files/%s.csv" % (file_id)
-    if not file_exists(csv_route):
+    if not check_file_exists(csv_route):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
     csv = CSVFile(csv_route)
     try:
@@ -150,3 +151,28 @@ def merge_keys(file_id: str, merge_keys_model: MergeKeysModel):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": str(e)})
     csv.save()
     return "Merge complete"
+
+
+@router.post("/{file_id}/transform")
+def transformed_file(file_id: str, data: list[TransformModel] = Body(...)):
+    # Found file
+    csv_route = "files/%s.csv" % (file_id)
+    if not check_file_exists(csv_route):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"Error": "File not exists or has been deleted"})
+    csv = CSVFile(csv_route)
+    keys_rename = {}
+    for item in data:
+        # Check for key name changes
+        if item.new_key_name:
+            keys_rename[item.old_key_name] = item.new_key_name
+        # Check for key type changes
+        if item.new_type == "positive":
+            csv.to_positive_number(item.old_key_name)
+        elif item.new_type == "negative":
+            csv.to_negative_number(item.old_key_name)
+        elif item.new_type == "date":
+            csv.to_date(item.old_key_name)
+
+    if keys_rename:
+        csv.rename_keys(keys_rename)
+    

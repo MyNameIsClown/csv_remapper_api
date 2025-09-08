@@ -37,13 +37,9 @@ def convert_python_types_to_string(csv_types: Dict[str, type]) -> Dict[str, str]
                         to strings: "integer", "float", "datetime", or "text".
     """
     for key, py_type in csv_types.items():
-        if py_type is int:
-            csv_types[key] = "integer"
-        elif py_type is float:
-            csv_types[key] = "float"
-        elif py_type is datetime:
+        if py_type == datetime:
             csv_types[key] = "datetime"
-        else:
+        elif py_type == str or py_type == None:
             csv_types[key] = "text"
     
     return csv_types

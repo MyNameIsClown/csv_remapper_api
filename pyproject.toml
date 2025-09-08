@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csv-remapper-api"
-version = "0.5.0"
+version = "0.5.1"
 description = "API for csv-remapper-lib"
 authors = ["Víctor Carrasco <vc.business.oo@gmail.com>"]
 packages = [{include = "app"}]
@@ -11,8 +11,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-fastapi = {version = ">=0.116.1,<0.117.0", extras = ["standard"]}
-csv-remapper-lib = "^1.2.1"
+fastapi = {extras = ["standard"], version = "^0.116.1"}
+csv-remapper-lib = "^1.2.2"
 apscheduler = "^3.11.0"
 pytz = "^2025.2"
 
