@@ -13,7 +13,7 @@ def file_exists(path: str) -> bool:
     except:
         return False
 
-def check_file_exists(file_id: str) -> str:
+def check_file_id_exists(file_id: str) -> str:
     """
         Check file exists on file path, if not raise error, if yes, return route
     """
