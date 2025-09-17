@@ -1,10 +1,12 @@
 import os
 import re
+import ast
 import uuid
 from datetime import datetime
 from fastapi import UploadFile, APIRouter, HTTPException, status, Body
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from csv_remapper_lib import CSVFile, ConnectorType
+from cryptography.fernet import Fernet
 
 from app.api.v1.schemas import (
     RenameKeyModel,
@@ -178,4 +180,40 @@ def transformed_file(file_id: str, data: list[TransformModel] = Body(...)):
     os.makedirs(os.path.dirname(new_csv_route), exist_ok=True)
     csv.save(new_csv_route)
     return FileResponse(new_csv_route)
+
+@router.post("/{file_id}/encrypt_config_file")
+def encrypt_config_file(file_id: str, configuration: list[TransformModel] = Body(...)):
+    config_file = "config_files/%s_config.cfg" % (file_id)
+    os.makedirs(os.path.dirname(config_file), exist_ok=True)
+    # Write configuration
+    with open(config_file, "w") as f:
+        f.write("[")
+        for i, config in enumerate(configuration):
+            f.write(str(config.model_dump()))
+            if i < len(configuration) - 1:
+                f.write(",")
+        f.write("]")
     
+    with open(config_file) as f:
+        original = f.read().encode()
+    
+    
+    raw_file_key = os.environ["FILE_ENCRYPT_KEY"]
+    key = raw_file_key.encode("utf-8") 
+    fernet = Fernet(key)
+    encrypted = fernet.encrypt(original).decode()
+    # Write configuration
+    with open(config_file, "w") as f:
+        f.write(encrypted)
+
+    return FileResponse(config_file)
+
+@router.post("/{file_id}/decrypt_config_file")
+def decrypt_config_file(file_id: str, file: UploadFile):
+    original = file.file.read()
+    raw_file_key = os.environ["FILE_ENCRYPT_KEY"]
+    key = raw_file_key.encode("utf-8") 
+    fernet = Fernet(key)
+    decrypted = fernet.decrypt(original).decode()
+    data = ast.literal_eval(decrypted)
+    return JSONResponse(content=data)

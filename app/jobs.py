@@ -6,66 +6,47 @@ from datetime import datetime, timedelta
 
 LOGGER = logging.getLogger(__name__)
 
-FILES_DIR = "files"  # Upload file folder
-RESPONSE_FILES_DIR = "files_response"  # Response file folder
-FILES_DIR_MAX_AGE = timedelta(minutes=5)
-RESPONSE_FILES_DIR_MAX_AGE = timedelta(minutes=1)
+FILES = ["files", timedelta(minutes=5)]
+RESPONSE_FILES = ["files_response", timedelta(minutes=1)]
+CONFIG_FILES = ["config_files", timedelta(minutes=1)]
 
-async def delete_expired_files():
-    """Deletes files form files folder when it has more than 5 minutes of lifetime"""
+async def delete_files():
+    """Deletes files form response files/config/response folder when it has more than X minutes of lifetime"""
     try:
-        now = datetime.now()
-
-        if not os.path.exists(FILES_DIR):
-            LOGGER.warning(f"The folder {FILES_DIR} not exists yet")
+        if not os.path.exists(FILES[0]):
+            LOGGER.warning(f"The folder {FILES[0]} not exists yet")
+            return
+        if not os.path.exists(RESPONSE_FILES[0]):
+            LOGGER.warning(f"The folder {RESPONSE_FILES[0]} not exists yet")
+            return
+        if not os.path.exists(CONFIG_FILES[0]):
+            LOGGER.warning(f"The folder {CONFIG_FILES[0]} not exists yet")
             return
 
-        for filename in os.listdir(FILES_DIR):
-            filepath = os.path.join(FILES_DIR, filename)
+        check_folder_files_lifetime(FILES[0], FILES[1])
+        check_folder_files_lifetime(RESPONSE_FILES[0], RESPONSE_FILES[1])
+        check_folder_files_lifetime(CONFIG_FILES[0], CONFIG_FILES[1])
+
+    except Exception as e:
+        LOGGER.error(f"Error deleting file: {e}") 
+
+def check_folder_files_lifetime(folder, lifetime):
+    now = datetime.now()
+    for filename in os.listdir(folder):
+            filepath = os.path.join(folder, filename)
 
             # Solo procesar archivos normales
             if not os.path.isfile(filepath):
-                continue
+                check_folder_files_lifetime(filepath, lifetime)
 
             # Hora de última modificación
             mtime = datetime.fromtimestamp(os.path.getmtime(filepath))
             age = now - mtime
 
-            if age > FILES_DIR_MAX_AGE:
+            if age > lifetime:
                 os.remove(filepath)
                 LOGGER.info(f"🗑️ Delete: {filename} (lifetime: {age})")
-
-    except Exception as e:
-        LOGGER.error(f"Error deleting file: {e}")
-
-async def delete_response_files():
-    """Deletes files form response files folder when it has more than  minutes of lifetime"""
-    try:
-        now = datetime.now()
-
-        if not os.path.exists(RESPONSE_FILES_DIR):
-            LOGGER.warning(f"The folder {RESPONSE_FILES_DIR} not exists yet")
-            return
-
-        for filename in os.listdir(RESPONSE_FILES_DIR):
-            filepath = os.path.join(RESPONSE_FILES_DIR, filename)
-
-            # Solo procesar archivos normales
-            if not os.path.isfile(filepath):
-                continue
-
-            # Hora de última modificación
-            mtime = datetime.fromtimestamp(os.path.getmtime(filepath))
-            age = now - mtime
-
-            if age > RESPONSE_FILES_DIR_MAX_AGE:
-                os.remove(filepath)
-                LOGGER.info(f"🗑️ Delete: {filename} (lifetime: {age})")
-
-    except Exception as e:
-        LOGGER.error(f"Error deleting file: {e}")
 
 @scheduler.scheduled_job('interval', seconds=10)
 async def remove_files():
-    await delete_response_files()
-    await delete_expired_files()
+    await delete_files()
