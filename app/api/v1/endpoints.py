@@ -2,11 +2,13 @@ import os
 import re
 import ast
 import uuid
+import logging
 from datetime import datetime
 from fastapi import UploadFile, APIRouter, HTTPException, status, Body
 from fastapi.responses import FileResponse, JSONResponse
 from csv_remapper_lib import CSVFile, ConnectorType
 from cryptography.fernet import Fernet
+from pydantic_core import from_json
 
 from app.api.v1.schemas import (
     RenameKeyModel,
@@ -26,6 +28,8 @@ router = APIRouter(prefix="/csv-file")
 
 # Ensure the files directory exists for storing CSVs
 os.makedirs("files", exist_ok=True)
+
+LOGGER = logging.getLogger("endpoint")
 
 @router.post("/")
 async def create_file(file: UploadFile):
@@ -215,5 +219,10 @@ def decrypt_config_file(file_id: str, file: UploadFile):
     key = raw_file_key.encode("utf-8") 
     fernet = Fernet(key)
     decrypted = fernet.decrypt(original).decode()
+    elements = decrypted.removeprefix("[").removesuffix("]").split("},")
+    for element in elements:
+        LOGGER.debug(str(element))
+        transform = TransformModel.model_validate_json(from_json(element.replace("'",'"'), allow_partial=True))
+        LOGGER.debug(str(transform))
     data = ast.literal_eval(decrypted)
     return JSONResponse(content=data)
