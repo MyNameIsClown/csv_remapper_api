@@ -3,6 +3,7 @@ import re
 import ast
 import uuid
 import logging
+import json
 from datetime import datetime
 from fastapi import UploadFile, APIRouter, HTTPException, status, Body
 from fastapi.responses import FileResponse, JSONResponse
@@ -187,20 +188,18 @@ def transformed_file(file_id: str, data: list[TransformModel] = Body(...)):
 
 @router.post("/{file_id}/encrypt_config_file")
 def encrypt_config_file(file_id: str, configuration: list[TransformModel] = Body(...)):
-    config_file = "config_files/%s_config.cfg" % (file_id)
+    config_file = "config_files/%s_config.txt" % (file_id)
     os.makedirs(os.path.dirname(config_file), exist_ok=True)
+    config_list = []
+    for element in configuration:
+        config_list.append(element.model_dump())
+    config_json = json.dumps(config_list)
     # Write configuration
     with open(config_file, "w") as f:
-        f.write("[")
-        for i, config in enumerate(configuration):
-            f.write(str(config.model_dump()))
-            if i < len(configuration) - 1:
-                f.write(",")
-        f.write("]")
-    
+        f.write(config_json)
+
     with open(config_file) as f:
         original = f.read().encode()
-    
     
     raw_file_key = os.environ["FILE_ENCRYPT_KEY"]
     key = raw_file_key.encode("utf-8") 
@@ -214,15 +213,28 @@ def encrypt_config_file(file_id: str, configuration: list[TransformModel] = Body
 
 @router.post("/{file_id}/decrypt_config_file")
 def decrypt_config_file(file_id: str, file: UploadFile):
+    # Decrypt config file and convert to json
     original = file.file.read()
     raw_file_key = os.environ["FILE_ENCRYPT_KEY"]
     key = raw_file_key.encode("utf-8") 
     fernet = Fernet(key)
     decrypted = fernet.decrypt(original).decode()
-    elements = decrypted.removeprefix("[").removesuffix("]").split("},")
-    for element in elements:
-        LOGGER.debug(str(element))
-        transform = TransformModel.model_validate_json(from_json(element.replace("'",'"'), allow_partial=True))
-        LOGGER.debug(str(transform))
-    data = ast.literal_eval(decrypted)
-    return JSONResponse(content=data)
+    configuration = json.loads(decrypted)
+
+    # Create csv object of file id
+    csv_route = check_file_id_exists(file_id)
+    csv = CSVFile(csv_route)
+
+    # Check configuration length with csv columns
+    if len(csv.content_keys) != len(configuration):
+        raise HTTPException(status_code=400, detail={"Error": "Configuration file is not valid for this file."})
+    
+    # If each old key name is on csv therefore it works on it
+    for element in configuration:
+        transform = TransformModel.model_validate(element)
+        try:
+            csv.content_keys.index(transform.old_key_name)
+        except ValueError:
+            raise HTTPException(status_code=400, detail={"Error": "Configuration file is not valid for this file."})
+    
+    return configuration
